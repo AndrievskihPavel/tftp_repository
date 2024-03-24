@@ -1,0 +1,157 @@
+: Saved
+: 
+: Serial Number: 123456789AB
+: Hardware:   ASA5520, 2048 MB RAM, CPU Pentium II 1000 MHz
+: Written by enable_15 at 12:36:57.969 UTC Sun Mar 24 2024
+!
+ASA Version 9.1(5)16 
+!
+hostname ciscoasa
+enable password 8Ry2YjIyt7RRXU24 encrypted
+xlate per-session deny tcp any4 any4
+xlate per-session deny tcp any4 any6
+xlate per-session deny tcp any6 any4
+xlate per-session deny tcp any6 any6
+xlate per-session deny udp any4 any4 eq domain
+xlate per-session deny udp any4 any6 eq domain
+xlate per-session deny udp any6 any4 eq domain
+xlate per-session deny udp any6 any6 eq domain
+names
+!
+interface Ethernet0
+ nameif LOCAL1
+ security-level 100
+ ip address 5.5.5.1 255.255.255.0 
+!
+interface Ethernet1
+ nameif INET
+ security-level 0
+ ip address 100.100.129.11 255.0.0.0 
+!
+interface Ethernet2
+ nameif SRV1
+ security-level 50
+ no ip address
+!
+interface Ethernet2.10
+ vlan 10
+ nameif SRV
+ security-level 50
+ ip address 4.4.4.1 255.255.255.0 
+!
+interface Ethernet3
+ nameif LOCAL2
+ security-level 100
+ ip address 6.6.6.1 255.255.255.0 
+!
+ftp mode passive
+object network VLANLOCAL1
+ subnet 5.5.5.0 255.255.255.0
+object network VLANLOCAL2
+ subnet 6.6.6.0 255.255.255.0
+object network SRVLOCAL
+ subnet 4.4.4.0 255.255.255.0
+object network VLANLSRV1
+ subnet 5.5.5.0 255.255.255.0
+object network VLANLSRV2
+ subnet 6.6.6.0 255.255.255.0
+access-list SPLIT1-ACL extended permit ip 5.5.5.0 255.255.255.0 any 
+access-list SPLIT2-ACL extended permit ip 6.6.6.0 255.255.255.0 any 
+access-list SPLIT3-ALC extended permit ip 4.4.4.0 255.255.255.0 any 
+pager lines 24
+mtu LOCAL1 1500
+mtu INET 1500
+mtu SRV1 1500
+mtu SRV 1500
+mtu LOCAL2 1500
+no failover
+icmp unreachable rate-limit 1 burst-size 1
+asdm image disk0:/asdm-733.bin
+no asdm history enable
+arp timeout 14400
+no arp permit-nonconnected
+!
+object network VLANLOCAL1
+ nat (LOCAL1,INET) dynamic interface
+object network VLANLOCAL2
+ nat (LOCAL2,INET) dynamic interface
+object network SRVLOCAL
+ nat (SRV,INET) dynamic interface
+object network VLANLSRV1
+ nat (LOCAL1,SRV) dynamic interface
+object network VLANLSRV2
+ nat (LOCAL2,SRV) dynamic interface
+access-group SPLIT1-ACL in interface LOCAL1
+access-group SPLIT3-ALC in interface SRV
+access-group SPLIT2-ACL in interface LOCAL2
+route INET 0.0.0.0 0.0.0.0 100.100.129.254 1 
+timeout xlate 3:00:00
+timeout pat-xlate 0:00:30
+timeout conn 1:00:00 half-closed 0:10:00 udp 0:02:00 icmp 0:00:02
+timeout sunrpc 0:10:00 h323 0:05:00 h225 1:00:00 mgcp 0:05:00 mgcp-pat 0:05:00
+timeout sip 0:30:00 sip_media 0:02:00 sip-invite 0:03:00 sip-disconnect 0:02:00
+timeout sip-provisional-media 0:02:00 uauth 0:05:00 absolute
+timeout tcp-proxy-reassembly 0:01:00
+timeout floating-conn 0:00:00
+dynamic-access-policy-record DfltAccessPolicy
+user-identity default-domain LOCAL
+no snmp-server location
+no snmp-server contact
+snmp-server enable traps snmp authentication linkup linkdown coldstart warmstart
+crypto ipsec security-association pmtu-aging infinite
+crypto ca trustpool policy
+telnet timeout 5
+ssh stricthostkeycheck
+ssh timeout 5
+ssh key-exchange group dh-group1-sha1
+console timeout 0
+threat-detection basic-threat
+threat-detection statistics access-list
+no threat-detection statistics tcp-intercept
+webvpn
+ anyconnect-essentials
+!
+class-map inspection_default
+ match default-inspection-traffic
+!
+!
+policy-map type inspect dns preset_dns_map
+ parameters
+  message-length maximum client auto
+  message-length maximum 512
+policy-map global_policy
+ class inspection_default
+  inspect dns preset_dns_map 
+  inspect ftp 
+  inspect h323 h225 
+  inspect h323 ras 
+  inspect ip-options 
+  inspect netbios 
+  inspect rsh 
+  inspect rtsp 
+  inspect skinny  
+  inspect esmtp 
+  inspect sqlnet 
+  inspect sunrpc 
+  inspect tftp 
+  inspect sip  
+  inspect xdmcp 
+  inspect icmp 
+!
+service-policy global_policy global
+prompt hostname context 
+no call-home reporting anonymous
+call-home
+ profile CiscoTAC-1
+  no active
+  destination address http https://tools.cisco.com/its/service/oddce/services/DDCEService
+  destination address email callhome@cisco.com
+  destination transport-method http
+  subscribe-to-alert-group diagnostic
+  subscribe-to-alert-group environment
+  subscribe-to-alert-group inventory periodic monthly
+  subscribe-to-alert-group configuration periodic monthly
+  subscribe-to-alert-group telemetry periodic daily
+crashinfo save disable
+Cryptochecksum:714df4591a4a441e5d81b8f82c6ca58d
+: end

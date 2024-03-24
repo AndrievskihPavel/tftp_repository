@@ -1,0 +1,176 @@
+
+!
+version 15.7
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname Router
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+clock timezone +05 5 0
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+redundancy
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+bridge irb
+!
+!
+!
+!
+interface Ethernet0/0
+ ip address 5.5.5.2 255.255.255.0
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+!
+interface Ethernet0/1
+ no ip address
+ ip nat inside
+ ip virtual-reassembly in
+ shutdown
+ duplex auto
+!
+interface Ethernet0/2
+ no ip address
+ ip nat inside
+ ip virtual-reassembly in
+ duplex auto
+!
+interface Ethernet0/2.10
+ encapsulation dot1Q 10
+ bridge-group 10
+!
+interface Ethernet0/2.20
+ encapsulation dot1Q 20
+ bridge-group 20
+!
+interface Ethernet0/3
+ no ip address
+ ip nat inside
+ ip virtual-reassembly in
+ duplex auto
+!
+interface Ethernet0/3.10
+ encapsulation dot1Q 10
+ bridge-group 10
+!
+interface Ethernet0/3.20
+ encapsulation dot1Q 20
+ bridge-group 20
+!
+interface BVI10
+ ip address 1.1.1.10 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly in
+ standby version 2
+ standby 10 ip 1.1.1.254
+ standby 10 priority 110
+ standby 10 preempt
+!
+interface BVI20
+ ip address 2.2.2.10 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly in
+ standby version 2
+ standby 20 ip 2.2.2.254
+ standby 20 preempt
+!
+router bgp 65001
+ bgp log-neighbor-changes
+ network 1.1.1.0 mask 255.255.255.0
+ network 2.2.2.0 mask 255.255.255.0
+ network 5.5.5.0 mask 255.255.255.0
+ neighbor 1.1.1.11 remote-as 65000
+ neighbor 2.2.2.11 remote-as 65000
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip nat inside source list 1 interface Ethernet0/0 overload
+ip route 0.0.0.0 0.0.0.0 5.5.5.1
+!
+ipv6 ioam timestamp
+!
+!
+access-list 1 permit any
+!
+control-plane
+!
+bridge 10 protocol ieee
+bridge 10 route ip
+bridge 20 protocol ieee
+bridge 20 route ip
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end
